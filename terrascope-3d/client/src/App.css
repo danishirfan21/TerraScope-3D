@@ -1,0 +1,137 @@
+:root {
+  --primary-bg: #0f172a;
+  --secondary-bg: #1e293b;
+  --accent-color: #38bdf8;
+  --text-main: #f8fafc;
+  --text-dim: #94a3b8;
+  --glass: rgba(30, 41, 59, 0.7);
+}
+
+body, html, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--primary-bg);
+  color: var(--text-main);
+  overflow: hidden;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.app-header {
+  padding: 1rem 2rem;
+  background: var(--secondary-bg);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  z-index: 10;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  background: linear-gradient(45deg, var(--accent-color), #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.viewer-layout {
+  display: flex;
+  flex: 1;
+  position: relative;
+}
+
+.sidebar {
+  width: 300px;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 1.5rem;
+  z-index: 5;
+  overflow-y: auto;
+}
+
+.sidebar.left {
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar.right {
+  border-left: 1px solid rgba(255,255,255,0.1);
+}
+
+.viewer-container {
+  flex: 1;
+  position: relative;
+  background: #000;
+}
+
+h3 {
+  color: var(--accent-color);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1.5rem;
+  margin-top: 0;
+}
+
+.filter-group {
+  margin-bottom: 1.5rem;
+}
+
+.filter-group label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 0.5rem;
+}
+
+.filter-group input {
+  width: 100%;
+  padding: 0.6rem;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  color: white;
+}
+
+.property-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 0.9rem;
+}
+
+.property-item .label {
+  color: var(--text-dim);
+}
+
+.heatmap-overlay-legend {
+  position: absolute;
+  bottom: 2rem;
+  right: 2rem;
+  background: var(--glass);
+  padding: 1rem;
+  border-radius: 8px;
+  width: 200px;
+}
+
+.gradient-bar {
+  height: 10px;
+  background: linear-gradient(to right, blue, cyan, green, yellow, red);
+  border-radius: 2px;
+  margin: 0.5rem 0;
+}
+
+.labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}

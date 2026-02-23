@@ -1,45 +1,57 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Box, Paper, Typography, AppBar, Toolbar, IconButton } from '@mui/material';
+import { TravelExplore } from '@mui/icons-material';
 import CesiumViewer from './components/CesiumViewer';
 import PropertyPanel from './components/PropertyPanel';
 import LayerControls from './components/LayerControls';
 import Filters from './components/Filters';
 import HeatmapOverlay from './components/HeatmapOverlay';
+import useStore from './store/useStore';
 import './App.css';
 
 function App() {
-  const [selectedEntity, setSelectedEntity] = useState(null);
-  const [layers, setLayers] = useState([
-    { id: '1', name: 'Terrain', visible: true },
-    { id: '2', name: 'Buildings', visible: true },
-    { id: '3', name: 'Roads', visible: false },
-  ]);
-
-  const handleToggleLayer = (id) => {
-    setLayers(layers.map(l => l.id === id ? { ...l, visible: !l.visible } : l));
-  };
+  const { selectedProperty } = useStore();
 
   return (
-    <div className="app-container">
-      <header className="app-header">
-        <h1>TerraScope 3D</h1>
-      </header>
-      
-      <main className="viewer-layout">
-        <aside className="sidebar left">
-          <Filters />
-          <LayerControls layers={layers} onToggleLayer={handleToggleLayer} />
-        </aside>
+    <Box sx={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Header */}
+      <AppBar position="static" sx={{ background: 'rgba(10, 25, 41, 0.9)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <Toolbar variant="dense">
+          <IconButton edge="start" color="primary" sx={{ mr: 2 }}>
+            <TravelExplore />
+          </IconButton>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold', letterSpacing: 1 }}>
+            TERRASCOPE <span style={{ color: '#2196f3' }}>3D</span>
+          </Typography>
+        </Toolbar>
+      </AppBar>
 
-        <section className="viewer-container">
-          <CesiumViewer />
-          <HeatmapOverlay active={true} />
-        </section>
+      {/* Main Layout */}
+      <Box sx={{ flexGrow: 1, position: 'relative' }}>
+        {/* Cesium Background */}
+        <CesiumViewer />
 
-        <aside className="sidebar right">
-          <PropertyPanel selectedEntity={selectedEntity} />
-        </aside>
-      </main>
-    </div>
+        {/* Overlay Legend */}
+        <HeatmapOverlay />
+
+        {/* Sidebar Left: Controls & Filters */}
+        <Box className="floating-panel left-panel">
+          <Paper className="glass-effect" sx={{ mb: 2 }}>
+            <Filters />
+          </Paper>
+          <Paper className="glass-effect">
+            <LayerControls />
+          </Paper>
+        </Box>
+
+        {/* Sidebar Right: Property Details */}
+        <Box className="floating-panel right-panel">
+          <Paper className="glass-effect" sx={{ height: '100%' }}>
+            <PropertyPanel selectedProperty={selectedProperty} />
+          </Paper>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 

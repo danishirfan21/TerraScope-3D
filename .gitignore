@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+.env
+*.log
+.DS_Store
+coverage/
+terrascope-3d/server/node_modules/
+terrascope-3d/client/node_modules/
+/verification/
+*.png

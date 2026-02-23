@@ -1,137 +1,73 @@
-:root {
-  --primary-bg: #0f172a;
-  --secondary-bg: #1e293b;
-  --accent-color: #38bdf8;
-  --text-main: #f8fafc;
-  --text-dim: #94a3b8;
-  --glass: rgba(30, 41, 59, 0.7);
+/* Custom scrollbar for a clean look */
+::-webkit-scrollbar {
+  width: 6px;
 }
 
-body, html, #root {
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.cesium-container {
+  width: 100%;
+  height: 100%;
   margin: 0;
   padding: 0;
-  height: 100%;
-  width: 100%;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: var(--primary-bg);
-  color: var(--text-main);
   overflow: hidden;
 }
 
-.app-container {
+/* Floating panels styling */
+.floating-panel {
+  position: absolute;
+  top: 20px;
+  z-index: 100;
   display: flex;
   flex-direction: column;
-  height: 100vh;
 }
 
-.app-header {
-  padding: 1rem 2rem;
-  background: var(--secondary-bg);
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  display: flex;
-  align-items: center;
-  z-index: 10;
+.left-panel {
+  left: 20px;
+  width: 320px;
 }
 
-.app-header h1 {
+.right-panel {
+  right: 20px;
+  bottom: 40px;
+  width: 360px;
+}
+
+/* Glassmorphism effect */
+.glass-effect {
+  background: rgba(10, 25, 41, 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
+}
+
+/* Cesium specific overrides */
+.cesium-viewer-bottom {
+  display: none !important; /* Hide logo/credit for clean look - Note: In production you should respect attribution */
+}
+
+.cesium-viewer-toolbar {
+  top: 10px !important;
+  right: 400px !important; /* Move away from our right panel */
+}
+
+body {
   margin: 0;
-  font-size: 1.5rem;
-  background: linear-gradient(45deg, var(--accent-color), #818cf8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.viewer-layout {
-  display: flex;
-  flex: 1;
-  position: relative;
-}
-
-.sidebar {
-  width: 300px;
-  background: var(--glass);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.05);
-  padding: 1.5rem;
-  z-index: 5;
-  overflow-y: auto;
-}
-
-.sidebar.left {
-  border-right: 1px solid rgba(255,255,255,0.1);
-}
-
-.sidebar.right {
-  border-left: 1px solid rgba(255,255,255,0.1);
-}
-
-.viewer-container {
-  flex: 1;
-  position: relative;
-  background: #000;
-}
-
-h3 {
-  color: var(--accent-color);
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 1.5rem;
-  margin-top: 0;
-}
-
-.filter-group {
-  margin-bottom: 1.5rem;
-}
-
-.filter-group label {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--text-dim);
-  margin-bottom: 0.5rem;
-}
-
-.filter-group input {
-  width: 100%;
-  padding: 0.6rem;
-  background: rgba(0,0,0,0.2);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 4px;
-  color: white;
-}
-
-.property-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  font-size: 0.9rem;
-}
-
-.property-item .label {
-  color: var(--text-dim);
-}
-
-.heatmap-overlay-legend {
-  position: absolute;
-  bottom: 2rem;
-  right: 2rem;
-  background: var(--glass);
-  padding: 1rem;
-  border-radius: 8px;
-  width: 200px;
-}
-
-.gradient-bar {
-  height: 10px;
-  background: linear-gradient(to right, blue, cyan, green, yellow, red);
-  border-radius: 2px;
-  margin: 0.5rem 0;
-}
-
-.labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.7rem;
-  color: var(--text-dim);
+  padding: 0;
+  background-color: #000;
+  color: #fff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }

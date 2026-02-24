@@ -42,20 +42,15 @@ const connectDB = async () => {
                             geometry: {
                                 type: 'Polygon',
                                 coordinates: [[
-                                    [-122.4194, 37.7749],
-                                    [-122.4194, 37.7752],
-                                    [-122.4191, 37.7752],
-                                    [-122.4191, 37.7749],
+                                    [-122.4194, 37.7749], [-122.4194, 37.7752],
+                                    [-122.4191, 37.7752], [-122.4191, 37.7749],
                                     [-122.4194, 37.7749]
                                 ]]
                             },
                             properties: {
                                 address: '123 Market St',
-                                price: 1200000,
-                                height: 20,
-                                yearBuilt: 1995,
-                                owner: 'John Doe',
-                                landUse: 'Residential'
+                                price: 1200000, height: 20, yearBuilt: 1995,
+                                owner: 'John Doe', landUse: 'Residential'
                             }
                         },
                         {
@@ -63,25 +58,68 @@ const connectDB = async () => {
                             geometry: {
                                 type: 'Polygon',
                                 coordinates: [[
-                                    [-122.4189, 37.7749],
-                                    [-122.4189, 37.7752],
-                                    [-122.4186, 37.7752],
-                                    [-122.4186, 37.7749],
+                                    [-122.4189, 37.7749], [-122.4189, 37.7752],
+                                    [-122.4186, 37.7752], [-122.4186, 37.7749],
                                     [-122.4189, 37.7749]
                                 ]]
                             },
                             properties: {
                                 address: '125 Market St',
-                                price: 2500000,
-                                height: 45,
-                                yearBuilt: 2010,
-                                owner: 'Jane Smith',
-                                landUse: 'Commercial'
+                                price: 2500000, height: 45, yearBuilt: 2010,
+                                owner: 'Jane Smith', landUse: 'Commercial'
+                            }
+                        },
+                        {
+                            type: 'Feature',
+                            geometry: {
+                                type: 'Polygon',
+                                coordinates: [[
+                                    [-122.4194, 37.7745], [-122.4194, 37.7748],
+                                    [-122.4191, 37.7748], [-122.4191, 37.7745],
+                                    [-122.4194, 37.7745]
+                                ]]
+                            },
+                            properties: {
+                                address: '127 Market St',
+                                price: 800000, height: 15, yearBuilt: 1985,
+                                owner: 'Alice Brown', landUse: 'Residential'
+                            }
+                        },
+                        {
+                            type: 'Feature',
+                            geometry: {
+                                type: 'Polygon',
+                                coordinates: [[
+                                    [-122.4189, 37.7745], [-122.4189, 37.7748],
+                                    [-122.4186, 37.7748], [-122.4186, 37.7745],
+                                    [-122.4189, 37.7745]
+                                ]]
+                            },
+                            properties: {
+                                address: '129 Market St',
+                                price: 4200000, height: 65, yearBuilt: 2021,
+                                owner: 'Tech Global', landUse: 'Commercial'
+                            }
+                        },
+                        {
+                            type: 'Feature',
+                            geometry: {
+                                type: 'Polygon',
+                                coordinates: [[
+                                    [-122.4199, 37.7749], [-122.4199, 37.7752],
+                                    [-122.4196, 37.7752], [-122.4196, 37.7749],
+                                    [-122.4199, 37.7749]
+                                ]]
+                            },
+                            properties: {
+                                address: '121 Market St',
+                                price: 1800000, height: 30, yearBuilt: 2005,
+                                owner: 'Heritage Group', landUse: 'Residential'
                             }
                         }
                     ];
                     await Property.insertMany(mockData);
-                    console.log('Database Seeded');
+                    console.log('Database Seeded with extended demo data');
                 }
             }
         }

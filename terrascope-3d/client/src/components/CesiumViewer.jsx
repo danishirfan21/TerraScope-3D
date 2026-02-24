@@ -34,6 +34,8 @@ const CesiumViewer = () => {
     const streetLayerRef = useRef(null);
     const osmBuildingsRef = useRef(null);
     const worldTerrainRef = useRef(null);
+    const lastHighlightedRef = useRef(null);
+    const [dataLoaded, setDataLoaded] = React.useState(false);
     const { setSelectedProperty, selectedProperty, layers, filters, setProperties } = useStore();
 
     useEffect(() => {
@@ -89,27 +91,24 @@ const CesiumViewer = () => {
                         const props = entity.properties.getValue(viewer.clock.currentTime);
                         setSelectedProperty({ ...props, cesiumId: entity.id });
 
-                        // Highlight logic
-                        dataSourceRef.current.entities.values.forEach(e => {
-                            if (e.polygon) {
-                                e.polygon.outlineColor = Color.BLACK;
-                                e.polygon.outlineWidth = 1;
-                            }
-                        });
+                        // Optimized Highlight logic - only touch the necessary entities
+                        if (lastHighlightedRef.current && lastHighlightedRef.current.polygon) {
+                            lastHighlightedRef.current.polygon.outlineColor = Color.BLACK;
+                            lastHighlightedRef.current.polygon.outlineWidth = 1;
+                        }
+                        
                         if (entity.polygon) {
                             entity.polygon.outlineColor = Color.YELLOW;
                             entity.polygon.outlineWidth = 3;
+                            lastHighlightedRef.current = entity;
                         }
 
                     } else {
                         setSelectedProperty(null);
-                        if (dataSourceRef.current) {
-                            dataSourceRef.current.entities.values.forEach(e => {
-                                if (e.polygon) {
-                                    e.polygon.outlineColor = Color.BLACK;
-                                    e.polygon.outlineWidth = 1;
-                                }
-                            });
+                        if (lastHighlightedRef.current && lastHighlightedRef.current.polygon) {
+                            lastHighlightedRef.current.polygon.outlineColor = Color.BLACK;
+                            lastHighlightedRef.current.polygon.outlineWidth = 1;
+                            lastHighlightedRef.current = null;
                         }
                     }
                 }, ScreenSpaceEventType.LEFT_CLICK);
@@ -159,6 +158,7 @@ const CesiumViewer = () => {
                         show: false
                     };
                 });
+                setDataLoaded(true);
             } catch (error) {
                 console.error('Failed to load properties into Cesium:', error);
             }
@@ -184,9 +184,15 @@ const CesiumViewer = () => {
         return Color.GREEN.withAlpha(0.6);
     };
 
-    // Handle flyTo when selectedProperty changes from outside (e.g. search)
+    // Handle flyTo when selectedProperty changes from OUTSIDE only (e.g. search)
+    // Avoid flying if the selection was made via map click (which already has the entity in view)
     useEffect(() => {
         if (viewerRef.current && selectedProperty && dataSourceRef.current) {
+            // Check if this property was already the one highlighted by click
+            if (lastHighlightedRef.current?.id === (selectedProperty.cesiumId || selectedProperty.id)) {
+                return; 
+            }
+
             const entity = dataSourceRef.current.entities.getById(selectedProperty.cesiumId || selectedProperty.id);
             if (entity) {
                 viewerRef.current.flyTo(entity, {
@@ -228,7 +234,7 @@ const CesiumViewer = () => {
                 }
             }
 
-            if (dataSourceRef.current) {
+            if (dataSourceRef.current && dataLoaded) {
                 dataSourceRef.current.show = layers.buildings;
 
                 dataSourceRef.current.entities.values.forEach(entity => {

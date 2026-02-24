@@ -47,11 +47,13 @@ function App() {
         </Box>
 
         {/* Sidebar Right: Property Details */}
-        <Box className="floating-panel right-panel">
-          <Paper className="glass-effect" sx={{ height: '100%' }}>
-            <PropertyPanel selectedProperty={selectedProperty} />
-          </Paper>
-        </Box>
+        {selectedProperty && (
+          <Box className="floating-panel right-panel">
+            <Paper className="glass-effect" sx={{ height: 'max-content', maxHeight: '100%', overflow: 'hidden' }}>
+              <PropertyPanel selectedProperty={selectedProperty} />
+            </Paper>
+          </Box>
+        )}
       </Box>
     </Box>
   );

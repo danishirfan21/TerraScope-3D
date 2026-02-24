@@ -52,6 +52,8 @@ const CesiumViewer = () => {
                     timeline: false,
                     fullscreenButton: true,
                     requestRenderMode: true,
+                    infoBox: false,
+                    selectionIndicator: false,
                 });
 
                 // Add OSM Street Layer but hide it initially

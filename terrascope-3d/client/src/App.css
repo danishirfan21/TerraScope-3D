@@ -28,20 +28,39 @@
 .floating-panel {
   position: absolute;
   top: 20px;
+  bottom: 20px; /* Limit height to prevent bottom overlap */
   z-index: 100;
   display: flex;
   flex-direction: column;
+  pointer-events: none; /* Allow clicks to pass through empty areas */
+}
+
+.floating-panel > * {
+  pointer-events: auto; /* Re-enable clicks for actual UI elements */
 }
 
 .left-panel {
   left: 20px;
   width: 320px;
+  overflow-y: auto;
+  padding-right: 5px; /* Space for scrollbar */
 }
 
 .right-panel {
   right: 20px;
-  bottom: 40px;
-  width: 360px;
+  width: 380px; /* Slightly wider for better chart display */
+  overflow-y: auto;
+  padding-left: 5px;
+}
+
+/* Hide scrollbar for a cleaner look while still allowing scroll */
+.left-panel::-webkit-scrollbar,
+.right-panel::-webkit-scrollbar {
+  display: none;
+}
+.left-panel, .right-panel {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Glassmorphism effect */
@@ -62,6 +81,15 @@
 .cesium-viewer-toolbar {
   top: 10px !important;
   right: 400px !important; /* Move away from our right panel */
+}
+
+.cesium-viewer-fullscreenContainer {
+  bottom: 20px !important;
+  right: 400px !important; /* Move away from our right panel */
+}
+
+.cesium-navigation-help-button {
+  display: none !important; /* Usually not needed for simple apps */
 }
 
 body {

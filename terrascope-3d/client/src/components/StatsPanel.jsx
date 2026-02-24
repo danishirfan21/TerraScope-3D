@@ -32,8 +32,17 @@ const StatsPanel = () => {
     }
 
     const totalProperties = filteredProperties.length;
-    const avgPrice = filteredProperties.reduce((acc, curr) => acc + curr.properties.price, 0) / totalProperties;
-    const avgHeight = filteredProperties.reduce((acc, curr) => acc + curr.properties.height, 0) / totalProperties;
+
+    // Calculate averages while ignoring null/undefined values
+    const priceProps = filteredProperties.map(p => p.properties.price).filter(v => v != null);
+    const avgPrice = priceProps.length > 0
+        ? priceProps.reduce((acc, curr) => acc + curr, 0) / priceProps.length
+        : 0;
+
+    const heightProps = filteredProperties.map(p => p.properties.height).filter(v => v != null);
+    const avgHeight = heightProps.length > 0
+        ? heightProps.reduce((acc, curr) => acc + curr, 0) / heightProps.length
+        : 0;
 
     return (
         <Paper

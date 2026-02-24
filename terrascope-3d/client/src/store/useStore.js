@@ -6,7 +6,8 @@ const useStore = create((set) => ({
     filters: {
         minPrice: 0,
         maxPrice: 5000000,
-        searchQuery: ''
+        searchQuery: '',
+        showImputed: false
     },
     layers: {
         satellite: true,

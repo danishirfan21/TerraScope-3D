@@ -3,9 +3,11 @@ import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const api = {
-    getProperties: async () => {
+    getProperties: async (impute = false) => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/properties`);
+            const response = await axios.get(`${API_BASE_URL}/properties`, {
+                params: { impute }
+            });
             return response.data;
         } catch (error) {
             console.error('Error fetching properties:', error);

@@ -39,7 +39,6 @@ const connectDB = async () => {
                     const mockData = [
                         {
                             type: 'Feature',
-                            id: 'prop1',
                             geometry: {
                                 type: 'Polygon',
                                 coordinates: [[
@@ -51,7 +50,6 @@ const connectDB = async () => {
                                 ]]
                             },
                             properties: {
-                                id: 'prop1',
                                 address: '123 Market St',
                                 price: 1200000,
                                 height: 20,
@@ -62,7 +60,6 @@ const connectDB = async () => {
                         },
                         {
                             type: 'Feature',
-                            id: 'prop2',
                             geometry: {
                                 type: 'Polygon',
                                 coordinates: [[
@@ -74,7 +71,6 @@ const connectDB = async () => {
                                 ]]
                             },
                             properties: {
-                                id: 'prop2',
                                 address: '125 Market St',
                                 price: 2500000,
                                 height: 45,

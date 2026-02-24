@@ -11,6 +11,7 @@ import {
     GeoJsonDataSource,
     OpenStreetMapImageryProvider,
     createOsmBuildingsAsync,
+    Cesium3DTileFeature,
     VerticalOrigin,
     Cartesian2,
     EllipsoidTerrainProvider,
@@ -71,10 +72,10 @@ const CesiumViewer = () => {
                 osmBuildingsRef.current.show = false;
 
                 viewer.camera.setView({
-                    destination: Cartesian3.fromDegrees(-122.397, 37.793, 1000),
+                    destination: Cartesian3.fromDegrees(-122.419, 37.7745, 800),
                     orientation: {
                         heading: 0.0,
-                        pitch: -0.5,
+                        pitch: -0.6,
                         roll: 0.0
                     }
                 });
@@ -86,30 +87,70 @@ const CesiumViewer = () => {
                 handlerRef.current = handler;
                 handler.setInputAction((click) => {
                     const pickedObject = viewer.scene.pick(click.position);
+
+                    // Reset previous highlight
+                    if (lastHighlightedRef.current) {
+                        if (lastHighlightedRef.current.type === 'entity') {
+                            const entity = lastHighlightedRef.current.object;
+                            if (entity.polygon) {
+                                entity.polygon.outlineColor = Color.BLACK;
+                                entity.polygon.outlineWidth = 1;
+                                // Restore original material if we changed it (optional)
+                            }
+                        } else if (lastHighlightedRef.current.type === 'tile') {
+                            const feature = lastHighlightedRef.current.object;
+                            try {
+                                feature.color = lastHighlightedRef.current.originalColor;
+                            } catch (e) {
+                                // Feature might be destroyed
+                            }
+                        }
+                        lastHighlightedRef.current = null;
+                    }
+
                     if (pickedObject && pickedObject.id instanceof Entity) {
                         const entity = pickedObject.id;
                         const props = entity.properties.getValue(viewer.clock.currentTime);
                         setSelectedProperty({ ...props, cesiumId: entity.id });
 
-                        // Optimized Highlight logic - only touch the necessary entities
-                        if (lastHighlightedRef.current && lastHighlightedRef.current.polygon) {
-                            lastHighlightedRef.current.polygon.outlineColor = Color.BLACK;
-                            lastHighlightedRef.current.polygon.outlineWidth = 1;
-                        }
-                        
                         if (entity.polygon) {
                             entity.polygon.outlineColor = Color.YELLOW;
                             entity.polygon.outlineWidth = 3;
-                            lastHighlightedRef.current = entity;
+                            lastHighlightedRef.current = {
+                                type: 'entity',
+                                object: entity
+                            };
                         }
+
+                    } else if (pickedObject instanceof Cesium3DTileFeature) {
+                        // Handle 3D Tile Feature (OSM Buildings)
+                        const propertyIds = pickedObject.getPropertyIds();
+                        const props = {};
+                        propertyIds.forEach(id => {
+                            props[id] = pickedObject.getProperty(id);
+                        });
+
+                        const mappedProps = {
+                            address: props.address || props['addr:street'] || 'OSM Building',
+                            price: 0,
+                            height: props.height || (props['building:levels'] ? props['building:levels'] * 3 : 10),
+                            yearBuilt: props.yearBuilt || props['start_date'] || 'N/A',
+                            owner: props.owner || 'Unknown',
+                            landUse: props.landUse || props.building || 'OSM Data',
+                            isOSM: true
+                        };
+                        setSelectedProperty(mappedProps);
+
+                        // Highlight 3D Tile
+                        lastHighlightedRef.current = {
+                            type: 'tile',
+                            object: pickedObject,
+                            originalColor: pickedObject.color.clone()
+                        };
+                        pickedObject.color = Color.YELLOW;
 
                     } else {
                         setSelectedProperty(null);
-                        if (lastHighlightedRef.current && lastHighlightedRef.current.polygon) {
-                            lastHighlightedRef.current.polygon.outlineColor = Color.BLACK;
-                            lastHighlightedRef.current.polygon.outlineWidth = 1;
-                            lastHighlightedRef.current = null;
-                        }
                     }
                 }, ScreenSpaceEventType.LEFT_CLICK);
 
@@ -189,7 +230,12 @@ const CesiumViewer = () => {
     useEffect(() => {
         if (viewerRef.current && selectedProperty && dataSourceRef.current) {
             // Check if this property was already the one highlighted by click
-            if (lastHighlightedRef.current?.id === (selectedProperty.cesiumId || selectedProperty.id)) {
+            const currentHighlightedObject = lastHighlightedRef.current?.object;
+            const highlightedId = currentHighlightedObject instanceof Entity
+                ? currentHighlightedObject.id
+                : null;
+
+            if (highlightedId === (selectedProperty.cesiumId || selectedProperty.id)) {
                 return; 
             }
 

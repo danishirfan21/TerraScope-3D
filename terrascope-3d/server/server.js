@@ -31,8 +31,8 @@ const connectDB = async () => {
             await mongoose.connect(uri);
             console.log('MongoDB Connected');
 
-            // Seed if memory server
-            if (!process.env.MONGODB_URI) {
+            // Seed if memory server or explicitly requested
+            if (!process.env.MONGODB_URI || process.env.SEED_DATA === 'true') {
                 const Property = require('./models/Property');
                 const count = await Property.countDocuments();
                 if (count === 0) {
@@ -85,7 +85,7 @@ const connectDB = async () => {
                         }
                     ];
                     await Property.insertMany(mockData);
-                    console.log('Memory DB Seeded');
+                    console.log('Database Seeded');
                 }
             }
         }

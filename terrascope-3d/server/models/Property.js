@@ -18,7 +18,6 @@ const propertySchema = new mongoose.Schema({
         }
     },
     properties: {
-        id: String,
         address: String,
         price: Number,
         height: Number,

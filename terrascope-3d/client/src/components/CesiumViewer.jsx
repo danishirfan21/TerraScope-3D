@@ -9,7 +9,13 @@ import {
     ScreenSpaceEventType,
     Entity,
     GeoJsonDataSource,
-    OpenStreetMapImageryProvider
+    OpenStreetMapImageryProvider,
+    createOsmBuildingsAsync,
+    VerticalOrigin,
+    Cartesian2,
+    EllipsoidTerrainProvider,
+    LabelStyle,
+    HeightReference
 } from 'cesium';
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import useStore from '../store/useStore';
@@ -26,15 +32,17 @@ const CesiumViewer = () => {
     const dataSourceRef = useRef(null);
     const handlerRef = useRef(null);
     const streetLayerRef = useRef(null);
+    const osmBuildingsRef = useRef(null);
+    const worldTerrainRef = useRef(null);
     const { setSelectedProperty, selectedProperty, layers, filters, setProperties } = useStore();
 
     useEffect(() => {
         const initCesium = async () => {
             if (containerRef.current && !viewerRef.current) {
-                const terrainProvider = await createWorldTerrainAsync();
+                worldTerrainRef.current = await createWorldTerrainAsync();
 
                 const viewer = new Viewer(containerRef.current, {
-                    terrainProvider: terrainProvider,
+                    terrainProvider: layers.terrain ? worldTerrainRef.current : new EllipsoidTerrainProvider(),
                     baseLayerPicker: false,
                     geocoder: false,
                     homeButton: false,
@@ -53,8 +61,13 @@ const CesiumViewer = () => {
                 streetLayerRef.current = viewer.imageryLayers.addImageryProvider(osmProvider);
                 streetLayerRef.current.show = false;
 
+                // Add OSM Buildings but hide it initially
+                const buildingsTileset = await createOsmBuildingsAsync();
+                osmBuildingsRef.current = viewer.scene.primitives.add(buildingsTileset);
+                osmBuildingsRef.current.show = false;
+
                 viewer.camera.setView({
-                    destination: Cartesian3.fromDegrees(-122.4194, 37.7749, 1000),
+                    destination: Cartesian3.fromDegrees(-122.397, 37.793, 1000),
                     orientation: {
                         heading: 0.0,
                         pitch: -0.5,
@@ -72,7 +85,7 @@ const CesiumViewer = () => {
                     if (pickedObject && pickedObject.id instanceof Entity) {
                         const entity = pickedObject.id;
                         const props = entity.properties.getValue(viewer.clock.currentTime);
-                        setSelectedProperty(props);
+                        setSelectedProperty({ ...props, cesiumId: entity.id });
 
                         // Highlight logic
                         dataSourceRef.current.entities.values.forEach(e => {
@@ -128,6 +141,21 @@ const CesiumViewer = () => {
                         entity.polygon.outline = true;
                         entity.polygon.outlineColor = Color.BLACK;
                     }
+
+                    // Add Label
+                    entity.label = {
+                        text: props.address,
+                        font: '14px sans-serif',
+                        fillColor: Color.WHITE,
+                        outlineColor: Color.BLACK,
+                        outlineWidth: 2,
+                        style: LabelStyle.FILL_AND_OUTLINE,
+                        verticalOrigin: VerticalOrigin.BOTTOM,
+                        pixelOffset: new Cartesian2(0, -20),
+                        heightReference: HeightReference.CLAMP_TO_GROUND,
+                        disableDepthTestDistance: Number.POSITIVE_INFINITY, // Ensure label is visible
+                        show: false
+                    };
                 });
             } catch (error) {
                 console.error('Failed to load properties into Cesium:', error);
@@ -157,7 +185,7 @@ const CesiumViewer = () => {
     // Handle flyTo when selectedProperty changes from outside (e.g. search)
     useEffect(() => {
         if (viewerRef.current && selectedProperty && dataSourceRef.current) {
-            const entity = dataSourceRef.current.entities.getById(selectedProperty.id);
+            const entity = dataSourceRef.current.entities.getById(selectedProperty.cesiumId || selectedProperty.id);
             if (entity) {
                 viewerRef.current.flyTo(entity, {
                     offset: {
@@ -180,7 +208,22 @@ const CesiumViewer = () => {
 
             // Toggle Street (OSM)
             if (streetLayerRef.current) {
-                streetLayerRef.current.show = !layers.satellite; // If satellite is off, show street
+                streetLayerRef.current.show = layers.street;
+            }
+
+            // Toggle OSM Buildings
+            if (osmBuildingsRef.current) {
+                osmBuildingsRef.current.show = layers.osmBuildings;
+            }
+
+            // Toggle Terrain
+            if (viewerRef.current && worldTerrainRef.current) {
+                const currentIsTerrain = !(viewerRef.current.terrainProvider instanceof EllipsoidTerrainProvider);
+                if (layers.terrain !== currentIsTerrain) {
+                    viewerRef.current.terrainProvider = layers.terrain
+                        ? worldTerrainRef.current
+                        : new EllipsoidTerrainProvider();
+                }
             }
 
             if (dataSourceRef.current) {
@@ -200,11 +243,16 @@ const CesiumViewer = () => {
                                     (filters.searchQuery === '' ||
                                      props.address.toLowerCase().includes(filters.searchQuery.toLowerCase()));
                     entity.show = isVisible;
+
+                    // Toggle label visibility
+                    if (entity.label) {
+                        entity.label.show = isVisible && layers.labels;
+                    }
                 });
                 viewerRef.current.scene.requestRender();
             }
         }
-    }, [layers.satellite, layers.buildings, layers.heatmap, filters]);
+    }, [layers.satellite, layers.buildings, layers.heatmap, layers.street, layers.osmBuildings, layers.labels, layers.terrain, filters]);
 
     return (
         <div 

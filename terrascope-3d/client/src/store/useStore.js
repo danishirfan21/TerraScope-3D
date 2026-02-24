@@ -11,7 +11,11 @@ const useStore = create((set) => ({
     layers: {
         satellite: true,
         buildings: true,
-        heatmap: false
+        heatmap: false,
+        osmBuildings: false,
+        labels: false,
+        terrain: true,
+        street: false
     },
     setProperties: (properties) => set({ properties }),
     setSelectedProperty: (property) => set({ selectedProperty: property }),

@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "harvest": "node osm-harvester.js",
     "test": "mocha tests/**/*.test.js --exit"
   },
   "dependencies": {

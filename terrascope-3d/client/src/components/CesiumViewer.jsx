@@ -86,12 +86,20 @@ const CesiumViewer = () => {
                 handlerRef.current = handler;
                 handler.setInputAction((click) => {
                     const pickedObject = viewer.scene.pick(click.position);
+                    
+                    // The pick result 'id' is the entity in a GeoJsonDataSource
+                    let entity = null;
                     if (pickedObject && pickedObject.id instanceof Entity) {
-                        const entity = pickedObject.id;
+                        entity = pickedObject.id;
+                    } else if (pickedObject && pickedObject.primitive && pickedObject.primitive.id instanceof Entity) {
+                        entity = pickedObject.primitive.id;
+                    }
+
+                    if (entity) {
                         const props = entity.properties.getValue(viewer.clock.currentTime);
                         setSelectedProperty({ ...props, cesiumId: entity.id });
 
-                        // Optimized Highlight logic - only touch the necessary entities
+                        // Optimized Highlight logic
                         if (lastHighlightedRef.current && lastHighlightedRef.current.polygon) {
                             lastHighlightedRef.current.polygon.outlineColor = Color.BLACK;
                             lastHighlightedRef.current.polygon.outlineWidth = 1;

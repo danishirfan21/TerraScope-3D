@@ -10,7 +10,10 @@ import {
     Layers,
     Public,
     Business,
-    Map
+    Map,
+    Label,
+    Terrain,
+    Streetview
 } from '@mui/icons-material';
 import useStore from '../store/useStore';
 
@@ -69,6 +72,66 @@ const LayerControls = () => {
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             <Map sx={{ fontSize: 18, mr: 1, color: 'text.secondary' }} />
                             <Typography variant="body2">Price Heatmap</Typography>
+                        </Box>
+                    }
+                />
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={layers.osmBuildings}
+                            onChange={() => toggleLayer('osmBuildings')}
+                            color="primary"
+                        />
+                    }
+                    label={
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Business sx={{ fontSize: 18, mr: 1, color: 'text.secondary', opacity: 0.7 }} />
+                            <Typography variant="body2">OSM Buildings</Typography>
+                        </Box>
+                    }
+                />
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={layers.labels}
+                            onChange={() => toggleLayer('labels')}
+                            color="primary"
+                        />
+                    }
+                    label={
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Label sx={{ fontSize: 18, mr: 1, color: 'text.secondary' }} />
+                            <Typography variant="body2">Street Labels</Typography>
+                        </Box>
+                    }
+                />
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={layers.terrain}
+                            onChange={() => toggleLayer('terrain')}
+                            color="primary"
+                        />
+                    }
+                    label={
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Terrain sx={{ fontSize: 18, mr: 1, color: 'text.secondary' }} />
+                            <Typography variant="body2">3D Terrain</Typography>
+                        </Box>
+                    }
+                />
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={layers.street}
+                            onChange={() => toggleLayer('street')}
+                            color="primary"
+                        />
+                    }
+                    label={
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Streetview sx={{ fontSize: 18, mr: 1, color: 'text.secondary' }} />
+                            <Typography variant="body2">Street Map</Typography>
                         </Box>
                     }
                 />

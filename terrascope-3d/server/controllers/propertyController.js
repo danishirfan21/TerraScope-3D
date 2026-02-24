@@ -11,7 +11,7 @@ exports.getAllProperties = async (req, res) => {
 
 exports.getPropertyById = async (req, res) => {
     try {
-        const property = await Property.findOne({ 'properties.id': req.params.id });
+        const property = await Property.findById(req.params.id);
         if (property) {
             res.json(property);
         } else {

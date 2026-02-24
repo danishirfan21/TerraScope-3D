@@ -85,7 +85,7 @@ const CesiumViewer = () => {
                     if (pickedObject && pickedObject.id instanceof Entity) {
                         const entity = pickedObject.id;
                         const props = entity.properties.getValue(viewer.clock.currentTime);
-                        setSelectedProperty(props);
+                        setSelectedProperty({ ...props, cesiumId: entity.id });
 
                         // Highlight logic
                         dataSourceRef.current.entities.values.forEach(e => {
@@ -185,7 +185,7 @@ const CesiumViewer = () => {
     // Handle flyTo when selectedProperty changes from outside (e.g. search)
     useEffect(() => {
         if (viewerRef.current && selectedProperty && dataSourceRef.current) {
-            const entity = dataSourceRef.current.entities.getById(selectedProperty.id);
+            const entity = dataSourceRef.current.entities.getById(selectedProperty.cesiumId || selectedProperty.id);
             if (entity) {
                 viewerRef.current.flyTo(entity, {
                     offset: {

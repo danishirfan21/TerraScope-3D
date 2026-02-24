@@ -20,9 +20,10 @@ describe('Property API', () => {
 
         // Seed test data
         await Property.create({
+            _id: '642b5a1f4b3d1c2d8c8e1234', // Explicit ID for testing
             type: 'Feature',
             geometry: { type: 'Polygon', coordinates: [[ [0,0], [0,1], [1,1], [1,0], [0,0] ]] },
-            properties: { id: 'prop1', address: 'Test 1', price: 100, height: 10, yearBuilt: 2000 }
+            properties: { address: 'Test 1', price: 100, height: 10, yearBuilt: 2000 }
         });
     });
 
@@ -39,13 +40,13 @@ describe('Property API', () => {
     });
 
     it('should GET a property by id', async () => {
-        const res = await request(app).get('/api/properties/prop1');
+        const res = await request(app).get('/api/properties/642b5a1f4b3d1c2d8c8e1234');
         expect(res.statusCode).to.equal(200);
-        expect(res.body.properties.id).to.equal('prop1');
+        expect(res.body.properties.address).to.equal('Test 1');
     });
 
     it('should return 404 for non-existent property', async () => {
-        const res = await request(app).get('/api/properties/nonexistent');
+        const res = await request(app).get('/api/properties/642b5a1f4b3d1c2d8c8effff');
         expect(res.statusCode).to.equal(404);
     });
 });

@@ -6,6 +6,7 @@ import PropertyPanel from './components/PropertyPanel';
 import LayerControls from './components/LayerControls';
 import Filters from './components/Filters';
 import HeatmapOverlay from './components/HeatmapOverlay';
+import StatsPanel from './components/StatsPanel';
 import useStore from './store/useStore';
 import './App.css';
 
@@ -39,9 +40,10 @@ function App() {
           <Paper className="glass-effect" sx={{ mb: 2 }}>
             <Filters />
           </Paper>
-          <Paper className="glass-effect">
+          <Paper className="glass-effect" sx={{ mb: 2 }}>
             <LayerControls />
           </Paper>
+          <StatsPanel />
         </Box>
 
         {/* Sidebar Right: Property Details */}

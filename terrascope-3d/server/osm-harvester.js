@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const Property = require('./models/Property');
 
-// Configuration: San Francisco Financial District
-const BBOX = "37.788,-122.402,37.798,-122.392"; 
+// Configuration: San Francisco - Larger Area (SoMa, Financial District, Market St)
+const BBOX = "37.770,-122.430,37.800,-122.390";
 
 /**
  * Fetches building data from OpenStreetMap using the Overpass API

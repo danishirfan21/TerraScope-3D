@@ -65,6 +65,48 @@ const properties = [
             owner: 'Bob Brown',
             landUse: 'Residential'
         }
+    },
+    {
+        type: 'Feature',
+        geometry: {
+            type: 'Polygon',
+            coordinates: [[
+                [-122.4204, 37.7749],
+                [-122.4204, 37.7752],
+                [-122.4201, 37.7752],
+                [-122.4201, 37.7749],
+                [-122.4204, 37.7749]
+            ]]
+        },
+        properties: {
+            address: '119 Market St',
+            price: null,
+            height: 25,
+            yearBuilt: 1990,
+            owner: 'Unknown',
+            landUse: 'Residential'
+        }
+    },
+    {
+        type: 'Feature',
+        geometry: {
+            type: 'Polygon',
+            coordinates: [[
+                [-122.4209, 37.7749],
+                [-122.4209, 37.7752],
+                [-122.4206, 37.7752],
+                [-122.4206, 37.7749],
+                [-122.4209, 37.7749]
+            ]]
+        },
+        properties: {
+            address: '117 Market St',
+            price: 1500000,
+            height: null,
+            yearBuilt: null,
+            owner: 'Private Owner',
+            landUse: 'Residential'
+        }
     }
 ];
 

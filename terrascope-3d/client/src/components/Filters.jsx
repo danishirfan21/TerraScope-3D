@@ -5,7 +5,9 @@ import {
     Slider,
     TextField,
     InputAdornment,
-    Paper
+    Paper,
+    FormControlLabel,
+    Switch
 } from '@mui/material';
 import { Search } from '@mui/icons-material';
 import useStore from '../store/useStore';
@@ -19,6 +21,10 @@ const Filters = () => {
 
     const handleSearchChange = (event) => {
         updateFilters({ searchQuery: event.target.value });
+    };
+
+    const handleImputedToggle = (event) => {
+        updateFilters({ showImputed: event.target.checked });
     };
 
     return (
@@ -48,6 +54,26 @@ const Filters = () => {
                         }
                     }}
                 />
+            </Box>
+
+            <Box sx={{ mb: 4 }}>
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={filters.showImputed}
+                            onChange={handleImputedToggle}
+                            color="primary"
+                        />
+                    }
+                    label={
+                        <Typography variant="subtitle2">
+                            Show Imputed Data
+                        </Typography>
+                    }
+                />
+                <Typography variant="caption" display="block" color="textSecondary" sx={{ mt: -1, ml: 1 }}>
+                    Fill missing values with dataset averages
+                </Typography>
             </Box>
 
             <Box sx={{ mb: 2 }}>

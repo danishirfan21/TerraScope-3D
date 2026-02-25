@@ -1,27 +1,27 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     Viewer,
     Ion,
-    createWorldTerrainAsync,
     Color,
     Cartesian3,
     ScreenSpaceEventHandler,
     ScreenSpaceEventType,
     Entity,
     GeoJsonDataSource,
-    OpenStreetMapImageryProvider,
-    createOsmBuildingsAsync,
+    LabelStyle,
     VerticalOrigin,
     Cartesian2,
+    HeightReference,
+    CallbackProperty,
+    Math as CesiumMath,
     EllipsoidTerrainProvider,
-    LabelStyle,
-    HeightReference
+    ColorMaterialProperty
 } from 'cesium';
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import useStore from '../store/useStore';
 import api from '../services/api';
+import useCameraLogic from '../hooks/useCameraLogic';
 
-// Set your Cesium Ion access token here
 if (import.meta.env.VITE_CESIUM_TOKEN) {
     Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_TOKEN;
 }
@@ -30,252 +30,282 @@ const CesiumViewer = () => {
     const containerRef = useRef(null);
     const viewerRef = useRef(null);
     const dataSourceRef = useRef(null);
-    const handlerRef = useRef(null);
-    const streetLayerRef = useRef(null);
-    const osmBuildingsRef = useRef(null);
-    const worldTerrainRef = useRef(null);
-    const lastHighlightedRef = useRef(null);
-    const [dataLoaded, setDataLoaded] = React.useState(false);
-    const { setSelectedProperty, selectedProperty, layers, filters, setProperties } = useStore();
+    const lastBboxRef = useRef("");
+    const [statsFetched, setStatsFetched] = useState(false);
 
+    const {
+        setSelectedProperty,
+        selectedProperty,
+        layers,
+        filters,
+        setProperties,
+        topOpportunities,
+        calculateMomentum,
+        isInvestorMode,
+        toggleLayer,
+        setCityStats
+    } = useStore();
+
+    /**
+     * Technical Optimization: Store Ref Sync
+     * We sync the React state to a Ref so that Cesium's WebGL callback properties
+     * (which run outside the React render cycle) can always access the freshest
+     * data without triggering expensive entity re-renders.
+     */
+    const stateRef = useRef({ selectedProperty, layers, filters, topOpportunities, isInvestorMode });
     useEffect(() => {
-        const initCesium = async () => {
-            if (containerRef.current && !viewerRef.current) {
-                worldTerrainRef.current = await createWorldTerrainAsync();
+        stateRef.current = { selectedProperty, layers, filters, topOpportunities, isInvestorMode };
+        // Request a frame when state changes if in requestRenderMode
+        if (viewerRef.current) viewerRef.current.scene.requestRender();
+    }, [selectedProperty, layers, filters, topOpportunities, isInvestorMode]);
 
-                const viewer = new Viewer(containerRef.current, {
-                    terrainProvider: layers.terrain ? worldTerrainRef.current : new EllipsoidTerrainProvider(),
+    const { flyToCityOverview, flyToProperty, orbitProperty } = useCameraLogic(viewerRef);
+
+    /**
+     * Lazy-Loading Strategy: BBOX Filtering
+     * To support 1000+ buildings without client-side lag, we only fetch
+     * data for the visible region.
+     * Threshold: We use a 4-decimal precision BBOX string to avoid
+     * redundant fetches on micro-movements while ensuring coverage.
+     */
+    const fetchVisibleProperties = async () => {
+        if (!viewerRef.current) return;
+
+        const viewer = viewerRef.current;
+        const rect = viewer.camera.computeViewRectangle();
+        if (!rect) return;
+
+        // Convert Rectangle to BBOX string: minLng,minLat,maxLng,maxLat
+        const bbox = `${CesiumMath.toDegrees(rect.west).toFixed(4)},${CesiumMath.toDegrees(rect.south).toFixed(4)},${CesiumMath.toDegrees(rect.east).toFixed(4)},${CesiumMath.toDegrees(rect.north).toFixed(4)}`;
+
+        // Performance optimization: prevent duplicate API calls if BBOX hasn't changed significantly
+        if (bbox === lastBboxRef.current) return;
+        lastBboxRef.current = bbox;
+
+        try {
+            const { filters } = stateRef.current;
+            const data = await api.getProperties({
+                bbox,
+                minPrice: filters.minPrice,
+                maxPrice: filters.maxPrice,
+                search: filters.searchQuery
+            });
+
+            setProperties(data.features);
+            updateDataSource(data);
+            calculateMomentum();
+
+            // Fetch city-wide stats once
+            if (!statsFetched) {
+                const stats = await api.getCityAnalytics();
+                setCityStats(stats);
+                setStatsFetched(true);
+            }
+        } catch (err) {
+            console.error("Fetch error", err);
+        }
+    };
+
+    const updateDataSource = async (data) => {
+        const viewer = viewerRef.current;
+        if (!viewer) return;
+
+        if (dataSourceRef.current) {
+            viewer.dataSources.remove(dataSourceRef.current);
+        }
+
+        const dataSource = await GeoJsonDataSource.load(data, { clampToGround: true });
+        viewer.dataSources.add(dataSource);
+        dataSourceRef.current = dataSource;
+
+        dataSource.entities.values.forEach(entity => {
+            const props = entity.properties.getValue(viewer.clock.currentTime);
+            applyEntityStyle(entity, props);
+        });
+    };
+
+    // 2. Advanced Styling (HSL Gradients, Pulse)
+    const applyEntityStyle = (entity, props) => {
+        const height = props.height || 10;
+        const price = props.price || 500000;
+
+        if (entity.polygon) {
+            entity.polygon.extrudedHeight = height;
+            entity.polygon.outline = true;
+            entity.polygon.outlineColor = Color.BLACK.withAlpha(0.3);
+
+            // Dynamic Material with Selection & State
+            entity.polygon.material = new ColorMaterialProperty(new CallbackProperty((time, result) => {
+                const { selectedProperty, layers, isInvestorMode, topOpportunities } = stateRef.current;
+                const isTop = topOpportunities.some(op => (op.address || op.properties?.address) === props.address);
+
+                // Selection Pulse (Blue)
+                if (selectedProperty && (selectedProperty.cesiumId === entity.id || selectedProperty.address === props.address)) {
+                    const pulse = (Math.sin(Date.now() / 200) + 1) / 2;
+                    return Color.fromHsl(0.55, 0.8, 0.4 + pulse * 0.2, 0.9).clone(result);
+                }
+
+                // Focus Mode: Dim non-selected buildings
+                if (selectedProperty) {
+                    return Color.WHITE.withAlpha(0.05).clone(result);
+                }
+
+                // Top Opportunity Pulse (Gold)
+                if (isTop && isInvestorMode) {
+                    const pulse = (Math.sin(Date.now() / 400) + 1) / 2;
+                    return Color.fromHsl(0.12, 0.9, 0.4 + pulse * 0.2, 0.8).clone(result);
+                }
+
+                // Layer Modes
+                if (layers.zoning) {
+                    const zoneColors = {
+                        'Residential': Color.YELLOW, 'Commercial': Color.RED,
+                        'Industrial': Color.PURPLE, 'Mixed-Use': Color.ORANGE, 'Public': Color.BLUE
+                    };
+                    return (zoneColors[props.landUse] || Color.GRAY).withAlpha(0.7).clone(result);
+                }
+
+                if (layers.density) {
+                    const h = Math.min(height / 100, 1);
+                    const alpha = Math.max(0.4, 0.8 - (height / 500));
+                    return Color.fromHsl(0.35, 0.8, 0.2 + h * 0.6, alpha).clone(result);
+                }
+
+                if (layers.heatmap) {
+                    const p = Math.min((price - 500000) / 5000000, 1);
+                    const alpha = Math.max(0.4, 0.8 - (height / 500));
+                    return Color.fromHsl((1 - p) * 0.35, 0.9, 0.5, alpha).clone(result);
+                }
+
+                if (layers.investmentScore) {
+                    const score = props.investmentScore || 50;
+                    const p = score / 100;
+                    const alpha = Math.max(0.4, 0.8 - (height / 500));
+                    // Green for high score (0.35), Red for low (0)
+                    return Color.fromHsl(p * 0.35, 0.9, 0.5, alpha).clone(result);
+                }
+
+                // Default Enterprise Glassy look - Alpha mapping by height for spatial depth
+                const hAlpha = Math.max(0.1, 0.5 - (height / 500));
+                return Color.WHITE.withAlpha(hAlpha).clone(result);
+            }, false));
+        }
+
+        entity.label = {
+            text: props.address,
+            font: '12px Inter, sans-serif',
+            fillColor: Color.WHITE,
+            outlineColor: Color.BLACK,
+            outlineWidth: 2,
+            style: LabelStyle.FILL_AND_OUTLINE,
+            verticalOrigin: VerticalOrigin.BOTTOM,
+            pixelOffset: new Cartesian2(0, -height - 10),
+            heightReference: HeightReference.RELATIVE_TO_GROUND,
+            show: stateRef.current.layers.labels || false,
+            disableDepthTestDistance: 1000
+        };
+    };
+
+    // 3. Initialization & Resource Lifecycle Management
+    useEffect(() => {
+        let viewer;
+        const init = async () => {
+            if (containerRef.current && !viewerRef.current) {
+                viewer = new Viewer(containerRef.current, {
+                    terrainProvider: new EllipsoidTerrainProvider(),
                     baseLayerPicker: false,
                     geocoder: false,
                     homeButton: false,
-                    sceneModePicker: true,
-                    navigationHelpButton: false,
                     animation: false,
                     timeline: false,
-                    fullscreenButton: true,
+                    /**
+                     * Performance Optimization: requestRenderMode
+                     * Instead of rendering at 60FPS constantly (which drains battery and CPU),
+                     * we only render when the camera moves or data changes.
+                     */
                     requestRenderMode: true,
+                    maximumRenderTimeChange: 0.0,
                     infoBox: false,
                     selectionIndicator: false,
                 });
 
-                // Add OSM Street Layer but hide it initially
-                const osmProvider = new OpenStreetMapImageryProvider({
-                    url: 'https://a.tile.openstreetmap.org/'
-                });
-                streetLayerRef.current = viewer.imageryLayers.addImageryProvider(osmProvider);
-                streetLayerRef.current.show = false;
-
-                // Add OSM Buildings but hide it initially
-                const buildingsTileset = await createOsmBuildingsAsync();
-                osmBuildingsRef.current = viewer.scene.primitives.add(buildingsTileset);
-                osmBuildingsRef.current.show = false;
-
                 viewer.camera.setView({
-                    destination: Cartesian3.fromDegrees(-122.397, 37.793, 1000),
-                    orientation: {
-                        heading: 0.0,
-                        pitch: -0.5,
-                        roll: 0.0
-                    }
+                    destination: Cartesian3.fromDegrees(-122.419, 37.7745, 1200),
+                    orientation: { heading: 0, pitch: -0.6, roll: 0 }
                 });
 
                 viewerRef.current = viewer;
 
-                // Setup Click Handler
                 const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
-                handlerRef.current = handler;
                 handler.setInputAction((click) => {
-                    const pickedObject = viewer.scene.pick(click.position);
-                    
-                    // The pick result 'id' is the entity in a GeoJsonDataSource
-                    let entity = null;
-                    if (pickedObject && pickedObject.id instanceof Entity) {
-                        entity = pickedObject.id;
-                    } else if (pickedObject && pickedObject.primitive && pickedObject.primitive.id instanceof Entity) {
-                        entity = pickedObject.primitive.id;
-                    }
-
-                    if (entity) {
-                        const props = entity.properties.getValue(viewer.clock.currentTime);
-                        setSelectedProperty({ ...props, cesiumId: entity.id });
-
-                        // Optimized Highlight logic
-                        if (lastHighlightedRef.current && lastHighlightedRef.current.polygon) {
-                            lastHighlightedRef.current.polygon.outlineColor = Color.BLACK;
-                            lastHighlightedRef.current.polygon.outlineWidth = 1;
-                        }
-                        
-                        if (entity.polygon) {
-                            entity.polygon.outlineColor = Color.YELLOW;
-                            entity.polygon.outlineWidth = 3;
-                            lastHighlightedRef.current = entity;
-                        }
-
+                    const picked = viewer.scene.pick(click.position);
+                    if (picked && picked.id instanceof Entity) {
+                        const props = picked.id.properties.getValue(viewer.clock.currentTime);
+                        setSelectedProperty({ ...props, cesiumId: picked.id.id, properties: props });
                     } else {
                         setSelectedProperty(null);
-                        if (lastHighlightedRef.current && lastHighlightedRef.current.polygon) {
-                            lastHighlightedRef.current.polygon.outlineColor = Color.BLACK;
-                            lastHighlightedRef.current.polygon.outlineWidth = 1;
-                            lastHighlightedRef.current = null;
-                        }
                     }
                 }, ScreenSpaceEventType.LEFT_CLICK);
 
-                // Load Data
-                loadPropertyData(viewer);
+                // Constraint tilt
+                viewer.scene.screenSpaceCameraController.minimumPitch = CesiumMath.toRadians(-90);
+                viewer.scene.screenSpaceCameraController.maximumPitch = CesiumMath.toRadians(-10);
+
+                viewer.camera.moveEnd.addEventListener(fetchVisibleProperties);
+                fetchVisibleProperties();
             }
         };
-
-        const loadPropertyData = async (viewer) => {
-            try {
-                const data = await api.getProperties();
-                setProperties(data.features);
-
-                const dataSource = await GeoJsonDataSource.load(data, {
-                    clampToGround: true
-                });
-
-                viewer.dataSources.add(dataSource);
-                dataSourceRef.current = dataSource;
-
-                const entities = dataSource.entities.values;
-                entities.forEach((entity) => {
-                    const props = entity.properties.getValue(viewer.clock.currentTime);
-                    const height = props.height || 10;
-                    const price = props.price || 0;
-
-                    if (entity.polygon) {
-                        entity.polygon.extrudedHeight = height;
-                        entity.polygon.material = getPriceColor(price);
-                        entity.polygon.outline = true;
-                        entity.polygon.outlineColor = Color.BLACK;
-                    }
-
-                    // Add Label
-                    entity.label = {
-                        text: props.address,
-                        font: '14px sans-serif',
-                        fillColor: Color.WHITE,
-                        outlineColor: Color.BLACK,
-                        outlineWidth: 2,
-                        style: LabelStyle.FILL_AND_OUTLINE,
-                        verticalOrigin: VerticalOrigin.BOTTOM,
-                        pixelOffset: new Cartesian2(0, -20),
-                        heightReference: HeightReference.CLAMP_TO_GROUND,
-                        disableDepthTestDistance: Number.POSITIVE_INFINITY, // Ensure label is visible
-                        show: false
-                    };
-                });
-                setDataLoaded(true);
-            } catch (error) {
-                console.error('Failed to load properties into Cesium:', error);
-            }
-        };
-
-        initCesium();
+        init();
 
         return () => {
-            if (handlerRef.current) {
-                handlerRef.current.destroy();
-            }
-            if (viewerRef.current) {
-                viewerRef.current.destroy();
+            if (viewer) {
+                viewer.camera.moveEnd.removeEventListener(fetchVisibleProperties);
+                viewer.destroy();
                 viewerRef.current = null;
             }
         };
     }, []);
 
-    const getPriceColor = (price, heatmapEnabled) => {
-        if (!heatmapEnabled) return Color.WHITE.withAlpha(0.6);
-        if (price > 2000000) return Color.RED.withAlpha(0.6);
-        if (price > 1000000) return Color.ORANGE.withAlpha(0.6);
-        return Color.GREEN.withAlpha(0.6);
-    };
-
-    // Handle flyTo when selectedProperty changes from OUTSIDE only (e.g. search)
-    // Avoid flying if the selection was made via map click (which already has the entity in view)
+    // 4. Listeners for UI Events
     useEffect(() => {
-        if (viewerRef.current && selectedProperty && dataSourceRef.current) {
-            // Check if this property was already the one highlighted by click
-            if (lastHighlightedRef.current?.id === (selectedProperty.cesiumId || selectedProperty.id)) {
-                return; 
-            }
+        const handleCityOverview = () => {
+            flyToCityOverview();
+            if (!layers.heatmap) toggleLayer('heatmap');
+        };
+        window.addEventListener('city-overview', handleCityOverview);
+        return () => window.removeEventListener('city-overview', handleCityOverview);
+    }, [layers]);
 
-            const entity = dataSourceRef.current.entities.getById(selectedProperty.cesiumId || selectedProperty.id);
-            if (entity) {
-                viewerRef.current.flyTo(entity, {
-                    offset: {
-                        heading: 0,
-                        pitch: -0.5,
-                        range: 500
-                    }
-                });
-            }
+    // Fly to selected property
+    useEffect(() => {
+        if (selectedProperty && dataSourceRef.current) {
+            const entity = dataSourceRef.current.entities.getById(selectedProperty.cesiumId);
+            if (entity) flyToProperty(entity);
         }
     }, [selectedProperty]);
 
-    // Handle layer visibility and filtering
+    // Orbit handler
+    useEffect(() => {
+        const handleOrbit = (e) => {
+            if (!dataSourceRef.current) return;
+            const entity = dataSourceRef.current.entities.getById(e.detail.cesiumId);
+            if (entity) orbitProperty(entity);
+        };
+        window.addEventListener('orbit-property', handleOrbit);
+        return () => window.removeEventListener('orbit-property', handleOrbit);
+    }, [dataSourceRef.current]);
+
+    // Toggle base layers
     useEffect(() => {
         if (viewerRef.current) {
-            // Toggle Satellite
-            if (viewerRef.current.imageryLayers.length > 0) {
-                viewerRef.current.imageryLayers.get(0).show = layers.satellite;
-            }
-
-            // Toggle Street (OSM)
-            if (streetLayerRef.current) {
-                streetLayerRef.current.show = layers.street;
-            }
-
-            // Toggle OSM Buildings
-            if (osmBuildingsRef.current) {
-                osmBuildingsRef.current.show = layers.osmBuildings;
-            }
-
-            // Toggle Terrain
-            if (viewerRef.current && worldTerrainRef.current) {
-                const currentIsTerrain = !(viewerRef.current.terrainProvider instanceof EllipsoidTerrainProvider);
-                if (layers.terrain !== currentIsTerrain) {
-                    viewerRef.current.terrainProvider = layers.terrain
-                        ? worldTerrainRef.current
-                        : new EllipsoidTerrainProvider();
-                }
-            }
-
-            if (dataSourceRef.current && dataLoaded) {
-                dataSourceRef.current.show = layers.buildings;
-
-                dataSourceRef.current.entities.values.forEach(entity => {
-                    const props = entity.properties.getValue(viewerRef.current.clock.currentTime);
-
-                    // Update Color based on Heatmap toggle
-                    if (entity.polygon) {
-                        entity.polygon.material = getPriceColor(props.price, layers.heatmap);
-                    }
-
-                    // Filtering logic
-                    const isVisible = props.price >= filters.minPrice &&
-                                    props.price <= filters.maxPrice &&
-                                    (filters.searchQuery === '' ||
-                                     props.address.toLowerCase().includes(filters.searchQuery.toLowerCase()));
-                    entity.show = isVisible;
-
-                    // Toggle label visibility
-                    if (entity.label) {
-                        entity.label.show = isVisible && layers.labels;
-                    }
-                });
-                viewerRef.current.scene.requestRender();
-            }
+            viewerRef.current.imageryLayers.get(0).show = layers.satellite;
+            if (dataSourceRef.current) dataSourceRef.current.show = layers.buildings;
+            viewerRef.current.scene.requestRender();
         }
-    }, [layers.satellite, layers.buildings, layers.heatmap, layers.street, layers.osmBuildings, layers.labels, layers.terrain, filters]);
+    }, [layers.satellite, layers.buildings]);
 
     return (
-        <div 
-            ref={containerRef} 
-            className="cesium-container"
-            style={{ width: '100%', height: '100%', position: 'absolute' }} 
-        />
+        <div ref={containerRef} className="cesium-viewer" style={{ width: '100%', height: '100%', position: 'absolute' }} />
     );
 };
 

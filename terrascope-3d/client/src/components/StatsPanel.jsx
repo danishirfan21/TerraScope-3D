@@ -4,13 +4,45 @@ import { Analytics, TrendingUp, HomeWork } from '@mui/icons-material';
 import useStore from '../store/useStore';
 
 const StatsPanel = () => {
-    const { properties } = useStore();
+    const { properties, filters } = useStore();
 
     if (!properties || properties.length === 0) return null;
 
-    const totalProperties = properties.length;
-    const avgPrice = properties.reduce((acc, curr) => acc + curr.properties.price, 0) / totalProperties;
-    const avgHeight = properties.reduce((acc, curr) => acc + curr.properties.height, 0) / totalProperties;
+    // Apply same filtering logic as CesiumViewer
+    const filteredProperties = properties.filter(p => {
+        const props = p.properties;
+        return props.price >= filters.minPrice &&
+               props.price <= filters.maxPrice &&
+               (filters.searchQuery === '' ||
+                props.address.toLowerCase().includes(filters.searchQuery.toLowerCase()));
+    });
+
+    if (filteredProperties.length === 0) {
+        return (
+            <Paper
+                elevation={0}
+                className="glass-effect"
+                sx={{ p: 2, color: 'white', width: '100%' }}
+            >
+                <Typography variant="body2" color="textSecondary">
+                    No properties match the current filters.
+                </Typography>
+            </Paper>
+        );
+    }
+
+    const totalProperties = filteredProperties.length;
+
+    // Calculate averages while ignoring null/undefined values
+    const priceProps = filteredProperties.map(p => p.properties.price).filter(v => v != null);
+    const avgPrice = priceProps.length > 0
+        ? priceProps.reduce((acc, curr) => acc + curr, 0) / priceProps.length
+        : 0;
+
+    const heightProps = filteredProperties.map(p => p.properties.height).filter(v => v != null);
+    const avgHeight = heightProps.length > 0
+        ? heightProps.reduce((acc, curr) => acc + curr, 0) / heightProps.length
+        : 0;
 
     return (
         <Paper

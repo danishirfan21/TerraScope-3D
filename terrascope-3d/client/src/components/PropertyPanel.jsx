@@ -8,7 +8,8 @@ import {
     Chip,
     Paper,
     Tooltip,
-    Alert
+    Alert,
+    Button
 } from '@mui/material';
 import {
     LocationOn,
@@ -17,7 +18,8 @@ import {
     CalendarToday,
     Person,
     Terrain,
-    InfoOutlined
+    InfoOutlined,
+    TrackChanges
 } from '@mui/icons-material';
 import {
     BarChart,
@@ -25,10 +27,17 @@ import {
     XAxis,
     YAxis,
     Tooltip as RechartsTooltip,
-    ResponsiveContainer
+    ResponsiveContainer,
+    Radar,
+    RadarChart,
+    PolarGrid,
+    PolarAngleAxis,
+    PolarRadiusAxis
 } from 'recharts';
+import useStore from '../store/useStore';
 
-const PropertyPanel = ({ selectedProperty }) => {
+const PropertyPanel = () => {
+    const { selectedProperty, isInvestorMode } = useStore();
     const isImputed = (field) => {
         return selectedProperty?.['_imputedFields']?.includes(field);
     };
@@ -49,6 +58,10 @@ const PropertyPanel = ({ selectedProperty }) => {
                 )}
             </Box>
         );
+    };
+
+    const handleOrbit = () => {
+        window.dispatchEvent(new CustomEvent('orbit-property', { detail: selectedProperty }));
     };
 
     if (!selectedProperty) {
@@ -138,19 +151,68 @@ const PropertyPanel = ({ selectedProperty }) => {
                     </Box>
                 </Box>
 
-                <Typography variant="subtitle2" gutterBottom>Market Analytics</Typography>
-                <Box sx={{ width: '100%', height: 200, mt: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                    {isInvestorMode ? 'INVESTMENT ANALYTICS' : 'MARKET ANALYTICS'}
+                </Typography>
+
+                <Box sx={{ width: '100%', height: 220, mt: 2 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={data}>
-                            <XAxis dataKey="name" stroke="#fff" fontSize={12} />
-                            <RechartsTooltip
-                                contentStyle={{ backgroundColor: '#0a1929', border: 'none' }}
-                                itemStyle={{ color: '#2196f3' }}
-                            />
-                            <Bar dataKey="value" fill="#2196f3" radius={[4, 4, 0, 0]} />
-                        </BarChart>
+                        {isInvestorMode ? (
+                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={[
+                                { subject: 'ROI', A: Math.min(100, (selectedProperty.yield || 0) * 1000), fullMark: 100 },
+                                { subject: 'Growth', A: Math.min(100, (selectedProperty.appreciationRate || 0) * 1000), fullMark: 100 },
+                                { subject: 'Safety', A: Math.max(0, 100 - (selectedProperty.zoningRisk || 0) * 100), fullMark: 100 },
+                                { subject: 'Density', A: Math.min(100, (selectedProperty.height || 0) / 2), fullMark: 100 },
+                                { subject: 'Value', A: Math.min(100, (selectedProperty.price || 0) / 50000), fullMark: 100 },
+                            ]}>
+                                <PolarGrid stroke="rgba(255,255,255,0.2)" />
+                                <PolarAngleAxis dataKey="subject" stroke="#90caf9" fontSize={10} />
+                                <Radar
+                                    name="Asset Score"
+                                    dataKey="A"
+                                    stroke="#2196f3"
+                                    fill="#2196f3"
+                                    fillOpacity={0.6}
+                                />
+                            </RadarChart>
+                        ) : (
+                            <BarChart data={data}>
+                                <XAxis dataKey="name" stroke="#fff" fontSize={12} />
+                                <RechartsTooltip
+                                    contentStyle={{ backgroundColor: '#0a1929', border: 'none' }}
+                                    itemStyle={{ color: '#2196f3' }}
+                                />
+                                <Bar dataKey="value" fill="#2196f3" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        )}
                     </ResponsiveContainer>
                 </Box>
+
+                <Button
+                    fullWidth
+                    variant="contained"
+                    startIcon={<TrackChanges />}
+                    onClick={handleOrbit}
+                    sx={{
+                        mt: 2,
+                        mb: 2,
+                        bgcolor: 'rgba(33, 150, 243, 0.2)',
+                        '&:hover': { bgcolor: 'rgba(33, 150, 243, 0.4)' }
+                    }}
+                >
+                    Orbit Asset
+                </Button>
+
+                {isInvestorMode && selectedProperty.investmentScore && (
+                    <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(76, 175, 80, 0.1)', borderRadius: 1, border: '1px solid rgba(76, 175, 80, 0.3)' }}>
+                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="subtitle2" color="#4caf50">INVESTMENT SCORE</Typography>
+                            <Typography variant="h5" color="#4caf50" sx={{ fontWeight: 'bold' }}>
+                                {selectedProperty.investmentScore}
+                            </Typography>
+                         </Box>
+                    </Box>
+                )}
             </Box>
         </Paper>
     );

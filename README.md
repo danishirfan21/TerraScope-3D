@@ -1,79 +1,75 @@
-# TerraScope 3D - Geospatial Property Intelligence Platform
+# TerraScope 3D: Enterprise Spatial Intelligence Platform
 
-TerraScope 3D is a production-quality 3D geospatial platform built with React, CesiumJS, and Node.js. It allows users to visualize property boundaries in 3D, analyze market data with heatmaps, and filter properties based on various criteria.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![CesiumJS](https://img.shields.io/badge/Engine-CesiumJS-orange.svg)](https://cesium.com/cesiumjs/)
+[![Performance-Optimized](https://img.shields.io/badge/Performance-Optimized-green.svg)](#performance-engineering)
 
-## 🚀 Features
+TerraScope 3D is a high-performance, investment-grade geospatial intelligence engine designed for institutional Proptech investors and urban planners. It transforms raw spatial data into actionable investment insights through real-time analytics and advanced WebGL rendering.
 
-- **Interactive 3D Globe**: Built on CesiumJS with terrain and satellite imagery.
-- **3D Building Extrusion**: GeoJSON property boundaries extruded into 3D models with height and price-based coloring.
-- **Dynamic Filtering**: Filter properties by price and address.
-- **Data Visualization**: Integrated Recharts for property analytics and a price intensity heatmap.
-- **Modern UI**: Dark theme with glassmorphism effects using Material UI.
-- **Responsive State**: Managed via Zustand for seamless interaction between map and UI.
+## 🚀 Key Enterprise Features
 
-## 🛠 Tech Stack
+### 🏙️ High-Density Urban Rendering
+*   **Scalable Architecture:** Supports rendering thousands of properties with seamless performance.
+*   **Spatial Indexing:** Backend powered by MongoDB `2dsphere` index for ultra-fast BBOX (Bounding Box) queries.
+*   **Lazy Loading:** Intelligent data fetching that only loads assets within the viewer's frustum, automatically unloading distant entities to conserve memory.
 
-- **Frontend**: React, Vite, CesiumJS, Material UI, Zustand, Recharts.
-- **Backend**: Node.js, Express, MongoDB (via `mongodb-memory-server` for easy setup).
-- **Testing**: Playwright for E2E testing.
+### 📊 Investment Intelligence Layer
+*   **Dynamic ROI Projections:** Real-time calculation of yield and appreciation rates.
+*   **Multi-Factor Scoring:** Properties are ranked using a proprietary `Investment Score` formula:
+    *   *Yield (40%) + Appreciation (50%) - Zoning Risk (10%)*
+*   **Top Opportunities:** Automated identification of high-momentum assets in the visible region.
+*   **Pro Analytics Mode:** High-fidelity radar charts for multi-dimensional asset evaluation.
 
-## 🏁 Getting Started
+### 🎨 Technical Sophistication
+*   **Custom Shader Materials:** Dynamic HSL color gradients based on price-density ratios.
+*   **Visual Hierarchy:** Soft-edge glows, selection pulses, and "Focus Mode" dimming for intuitive navigation.
+*   **Camera Intelligence:** Cinematic fly-throughs with easing curves and tilt-constrained exploration.
+
+## 🛠️ Performance Engineering
+
+To meet Enterprise SaaS requirements, TerraScope 3D implements several low-level optimizations:
+
+*   **Explicit Rendering Mode:** Uses Cesium's `requestRenderMode` to reduce GPU/CPU load by only rendering when scene changes occur.
+*   **Reactive State Management:** Centralized Zustand store with memoized filtering logic to prevent unnecessary re-renders.
+*   **Callback Properties:** Visual updates (pulses, highlights) are handled via Cesium `CallbackProperty`, avoiding expensive entity re-creations and minimizing memory pressure.
+*   **Spatial Partitioning:** API-level BBOX filtering ensures the client never processes more data than necessary.
+
+## 🏗️ Architecture Overview
+
+```mermaid
+graph TD
+    Client[React Frontend] --> Store[Zustand State]
+    Store --> Cesium[CesiumJS Engine]
+    Client --> API[Axios Service Layer]
+    API --> Backend[Node.js/Express]
+    Backend --> DB[(MongoDB w/ Geospatial Index)]
+    Cesium --> |BBOX Query| API
+```
+
+## 🏁 Getting Started for Developers
 
 ### Prerequisites
-
 - Node.js (v18+)
 - NPM or Bun
 
-### Installation
-
-1. Clone the repository.
-2. Navigate to the project root:
+### Installation & Run
+1. **Server Setup**:
    ```bash
-   cd terrascope-3d
+   cd terrascope-3d/server && npm install && npm start
    ```
-3. Install dependencies for both client and server:
+2. **Client Setup**:
    ```bash
-   # Install server dependencies
-   cd server && npm install
-
-   # Install client dependencies
-   cd ../client && npm install
+   cd terrascope-3d/client && npm install && npm run dev
    ```
+3. **Environment**: Set `VITE_CESIUM_TOKEN` in `terrascope-3d/client/.env`.
 
-### Running the Application
+## 🛤️ Scaling Roadmap
 
-1. **Start the Backend**:
-   ```bash
-   cd server
-   npm start
-   ```
-   The server will run on `http://localhost:5000`. It includes an in-memory MongoDB that seeds automatically.
+1.  **Phase 1 (Current):** High-density property visualization and investment scoring.
+2.  **Phase 2:** Integration of real-time market transaction feeds and IoT occupancy sensors.
+3.  **Phase 3:** Predictive AI modeling for 10-year neighborhood gentrification forecasting.
+4.  **Phase 4:** Collaborative "War Room" mode for multi-user investment strategy sessions.
 
-2. **Start the Frontend**:
-   ```bash
-   cd client
-   npm run dev
-   ```
-   The application will be available at `http://localhost:5173`.
+---
 
-### Environment Variables
-
-Create a `.env` file in `terrascope-3d/client/`:
-```env
-VITE_CESIUM_TOKEN=your_cesium_ion_token_here
-```
-
-## 🧪 Testing
-
-Run E2E tests with Playwright:
-```bash
-cd client
-npx playwright test
-```
-
-## 📂 Project Structure
-
-- `client/`: React application and Cesium viewer.
-- `server/`: Express API and MongoDB models.
-- `terrascope-3d/client/src/components/`: Core UI and Map components.
-- `terrascope-3d/client/src/store/`: Zustand state management.
+*This platform is designed for professional use. For access to the full dataset or API documentation, contact the enterprise support team.*

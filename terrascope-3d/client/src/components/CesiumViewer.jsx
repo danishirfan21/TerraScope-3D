@@ -39,6 +39,56 @@ const CesiumViewer = () => {
     const [dataLoaded, setDataLoaded] = React.useState(false);
     const { setSelectedProperty, selectedProperty, layers, filters, setProperties } = useStore();
 
+    const loadPropertyData = async (viewer) => {
+        try {
+            const data = await api.getProperties(filters.showImputed);
+            setProperties(data.features);
+
+            if (dataSourceRef.current) {
+                viewer.dataSources.remove(dataSourceRef.current);
+            }
+
+            const dataSource = await GeoJsonDataSource.load(data, {
+                clampToGround: true
+            });
+
+            viewer.dataSources.add(dataSource);
+            dataSourceRef.current = dataSource;
+
+            const entities = dataSource.entities.values;
+            entities.forEach((entity) => {
+                const props = entity.properties.getValue(viewer.clock.currentTime);
+                const height = props.height || 10;
+                const price = props.price || 0;
+
+                if (entity.polygon) {
+                    entity.polygon.extrudedHeight = height;
+                    entity.polygon.material = getPriceColor(price);
+                    entity.polygon.outline = true;
+                    entity.polygon.outlineColor = Color.BLACK;
+                }
+
+                // Add Label
+                entity.label = {
+                    text: props.address,
+                    font: '14px sans-serif',
+                    fillColor: Color.WHITE,
+                    outlineColor: Color.BLACK,
+                    outlineWidth: 2,
+                    style: LabelStyle.FILL_AND_OUTLINE,
+                    verticalOrigin: VerticalOrigin.BOTTOM,
+                    pixelOffset: new Cartesian2(0, -20),
+                    heightReference: HeightReference.CLAMP_TO_GROUND,
+                    disableDepthTestDistance: Number.POSITIVE_INFINITY, // Ensure label is visible
+                    show: false
+                };
+            });
+            setDataLoaded(true);
+        } catch (error) {
+            console.error('Failed to load properties into Cesium:', error);
+        }
+    };
+
     useEffect(() => {
         const initCesium = async () => {
             if (containerRef.current && !viewerRef.current) {
@@ -159,52 +209,6 @@ const CesiumViewer = () => {
             }
         };
 
-        const loadPropertyData = async (viewer) => {
-            try {
-                const data = await api.getProperties();
-                setProperties(data.features);
-
-                const dataSource = await GeoJsonDataSource.load(data, {
-                    clampToGround: true
-                });
-
-                viewer.dataSources.add(dataSource);
-                dataSourceRef.current = dataSource;
-
-                const entities = dataSource.entities.values;
-                entities.forEach((entity) => {
-                    const props = entity.properties.getValue(viewer.clock.currentTime);
-                    const height = props.height || 10;
-                    const price = props.price || 0;
-
-                    if (entity.polygon) {
-                        entity.polygon.extrudedHeight = height;
-                        entity.polygon.material = getPriceColor(price);
-                        entity.polygon.outline = true;
-                        entity.polygon.outlineColor = Color.BLACK;
-                    }
-
-                    // Add Label
-                    entity.label = {
-                        text: props.address,
-                        font: '14px sans-serif',
-                        fillColor: Color.WHITE,
-                        outlineColor: Color.BLACK,
-                        outlineWidth: 2,
-                        style: LabelStyle.FILL_AND_OUTLINE,
-                        verticalOrigin: VerticalOrigin.BOTTOM,
-                        pixelOffset: new Cartesian2(0, -20),
-                        heightReference: HeightReference.CLAMP_TO_GROUND,
-                        disableDepthTestDistance: Number.POSITIVE_INFINITY, // Ensure label is visible
-                        show: false
-                    };
-                });
-                setDataLoaded(true);
-            } catch (error) {
-                console.error('Failed to load properties into Cesium:', error);
-            }
-        };
-
         initCesium();
 
         return () => {
@@ -251,6 +255,13 @@ const CesiumViewer = () => {
             }
         }
     }, [selectedProperty]);
+
+    // Handle data re-fetching when showImputed changes
+    useEffect(() => {
+        if (viewerRef.current) {
+            loadPropertyData(viewerRef.current);
+        }
+    }, [filters.showImputed]);
 
     // Handle layer visibility and filtering
     useEffect(() => {

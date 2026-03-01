@@ -26,12 +26,6 @@ const LayerControls = () => {
 
     return (
         <Box sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Layers sx={{ mr: 1, color: 'primary.main', fontSize: 20 }} />
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                    Visual Layers
-                </Typography>
-            </Box>
 
             <FormGroup>
                 <FormControlLabel

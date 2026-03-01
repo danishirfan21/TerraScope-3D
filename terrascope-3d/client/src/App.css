@@ -25,40 +25,20 @@
 }
 
 /* Floating panels styling */
-.floating-panel {
-  position: absolute;
-  top: 20px;
-  bottom: 20px; /* Limit height to prevent bottom overlap */
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  pointer-events: none; /* Allow clicks to pass through empty areas */
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
 }
 
-.floating-panel > * {
-  pointer-events: auto; /* Re-enable clicks for actual UI elements */
-}
-
-.left-panel {
-  left: 20px;
-  width: 320px;
-  overflow-y: auto;
-  padding-right: 5px; /* Space for scrollbar */
-}
-
-.right-panel {
-  right: 20px;
-  width: 380px; /* Slightly wider for better chart display */
-  overflow-y: auto;
-  padding-left: 5px;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Hide scrollbar for a cleaner look while still allowing scroll */
-.left-panel::-webkit-scrollbar,
-.right-panel::-webkit-scrollbar {
+.draggable-content::-webkit-scrollbar {
   display: none;
 }
-.left-panel, .right-panel {
+.draggable-content {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }

@@ -8,6 +8,7 @@ import Filters from './components/Filters';
 import HeatmapOverlay from './components/HeatmapOverlay';
 import InvestorDashboard from './components/InvestorDashboard';
 import PerformanceOverlay from './components/PerformanceOverlay';
+import DraggablePanel from './components/DraggablePanel';
 import useStore from './store/useStore';
 import './App.css';
 
@@ -62,31 +63,53 @@ function App() {
         {/* Overlay Legend */}
         <HeatmapOverlay />
 
+        {/* Draggable Panels */}
+        
+        {/* Left Side: Filters & Layer Controls */}
+        <DraggablePanel 
+          id="filters"
+          title="Refine Search" 
+          initialPos={{ x: 20, y: 70 }}
+          width={320}
+        >
+          <Filters />
+        </DraggablePanel>
+
+        <DraggablePanel 
+          id="layers"
+          title="Visual Layers" 
+          initialPos={{ x: 20, y: 400 }}
+          width={320}
+        >
+          <LayerControls />
+        </DraggablePanel>
+
         {/* Investor Dashboard Overlay */}
-        <InvestorDashboard />
+        {isInvestorMode && (
+          <DraggablePanel 
+            id="investor"
+            title="Enterprise Intelligence" 
+            initialPos={{ x: window.innerWidth - 340, y: 70 }}
+            width={320}
+          >
+            <InvestorDashboard />
+          </DraggablePanel>
+        )}
 
         {/* Performance & Metrics Overlay */}
         <PerformanceOverlay />
 
-        {/* Sidebar Left: Controls & Filters */}
-        <Box className="floating-panel left-panel">
-          <Paper className="glass-effect" sx={{ mb: 2 }}>
-            <Filters />
-          </Paper>
-          <Paper className="glass-effect" sx={{ mb: 2 }}>
-            <LayerControls />
-          </Paper>
-        </Box>
-
-        {/* Sidebar Right: Property Details */}
-        <Box className={`floating-panel right-panel ${selectedProperty ? 'visible' : ''}`} sx={{
-          transform: selectedProperty ? 'translateX(0)' : 'translateX(120%)',
-          transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-        }}>
-          <Paper className="glass-effect" sx={{ width: 320, height: 'max-content', maxHeight: '80vh', overflow: 'hidden' }}>
+        {/* Sidebar Right: Property Details (Now Draggable) */}
+        {selectedProperty && (
+          <DraggablePanel 
+            id="property"
+            title="Property Info" 
+            initialPos={{ x: window.innerWidth - 340, y: 350 }}
+            width={320}
+          >
             <PropertyPanel />
-          </Paper>
-        </Box>
+          </DraggablePanel>
+        )}
 
         <Box sx={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', pointerEvents: 'none' }}>
             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', letterSpacing: 2 }}>

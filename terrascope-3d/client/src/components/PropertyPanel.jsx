@@ -88,9 +88,6 @@ const PropertyPanel = () => {
             color: 'white'
         }}>
             <Box sx={{ p: 2 }}>
-                <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Property Info
-                </Typography>
                 <Chip
                     label={selectedProperty.landUse}
                     color="primary"

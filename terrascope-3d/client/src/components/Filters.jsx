@@ -29,9 +29,6 @@ const Filters = () => {
 
     return (
         <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                Refine Search
-            </Typography>
 
             <Box sx={{ mb: 4 }}>
                 <TextField
